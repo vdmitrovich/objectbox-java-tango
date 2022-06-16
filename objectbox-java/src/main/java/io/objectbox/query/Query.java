@@ -130,7 +130,6 @@ public class Query<T> implements Closeable {
     @SuppressWarnings("deprecation") // finalize()
     @Override
     protected void finalize() throws Throwable {
-        close();
         super.finalize();
     }
 
@@ -256,6 +255,9 @@ public class Query<T> implements Closeable {
      */
     @Nonnull
     public long[] findIds(final long offset, final long limit) {
+        if(handle == 0){
+            throw new IllegalStateException("Internal error: query is already closed");
+        }
         return box.internalCallWithReaderHandle(cursorHandle -> nativeFindIds(handle, cursorHandle, offset, limit));
     }
 
@@ -294,6 +296,9 @@ public class Query<T> implements Closeable {
     }
 
     <R> R callInReadTx(Callable<R> callable) {
+        if(handle == 0){
+            throw new IllegalStateException("Internal error: query is already closed");
+        }
         return store.callInReadTxWithRetry(callable, queryAttempts, INITIAL_RETRY_BACK_OFF_IN_MS, true);
     }
 
@@ -614,7 +619,7 @@ public class Query<T> implements Closeable {
     }
 
     /**
-     * A {@link io.objectbox.reactive.DataObserver} can be subscribed to data changes using the returned builder.
+     * A {@link DataObserver} can be subscribed to data changes using the returned builder.
      * The observer is supplied via {@link SubscriptionBuilder#observer(DataObserver)} and will be notified once
      * the query results have (potentially) changed.
      * <p>
